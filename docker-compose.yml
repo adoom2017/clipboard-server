@@ -27,11 +27,12 @@ services:
 
   # 反向代理服务器
   nginx:
-    image: nginx:alpine
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
     ports:
       - "80:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
       - ./ssl:/etc/nginx/ssl
     depends_on:
       clipboard-sync-server:
@@ -50,7 +51,3 @@ services:
 networks:
   clipboard-network:
     driver: bridge
-
-volumes:
-  clipboard_data:
-  clipboard_logs:

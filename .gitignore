@@ -47,6 +47,11 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 
+# SQLite temporary files
+*.db-shm
+*.db-wal
+*.db-journal
+
 # Log files
 *.log
 logs/
@@ -70,3 +75,4 @@ config.yml
 
 # Air live reload tool
 tmp/
+/data/
