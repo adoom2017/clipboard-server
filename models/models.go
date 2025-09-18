@@ -95,8 +95,6 @@ type ClipboardItem struct {
 	ClientID  string        `json:"client_id" gorm:"index"` // 客户端唯一ID
 	Content   string        `json:"content" gorm:"type:text"`
 	Type      ClipboardType `json:"type" gorm:"type:varchar(20);default:'text'"`
-	IsSynced  bool          `json:"is_synced" gorm:"default:false"`
-	SyncedAt  *time.Time    `json:"synced_at"`
 	Timestamp time.Time     `json:"timestamp" gorm:"index"`
 	CreatedAt time.Time     `json:"created_at"`
 	UpdatedAt time.Time     `json:"updated_at"`
@@ -157,8 +155,6 @@ type ClipboardItemResponse struct {
 	ID        string        `json:"id"`
 	Content   string        `json:"content"`
 	Type      ClipboardType `json:"type"`
-	IsSynced  bool          `json:"is_synced"`
-	SyncedAt  *time.Time    `json:"synced_at"`
 	Timestamp time.Time     `json:"timestamp"`
 	CreatedAt time.Time     `json:"created_at"`
 }
@@ -169,8 +165,6 @@ func (c *ClipboardItem) ToResponse() ClipboardItemResponse {
 		ID:        c.ID,
 		Content:   c.Content,
 		Type:      c.Type,
-		IsSynced:  c.IsSynced,
-		SyncedAt:  c.SyncedAt,
 		Timestamp: c.Timestamp,
 		CreatedAt: c.CreatedAt,
 	}
@@ -261,4 +255,10 @@ type StatisticsResponse struct {
 type DailyActivity struct {
 	Date  string `json:"date"`
 	Count int64  `json:"count"`
+}
+
+// RecentSyncResponse for recent sync clipboard items
+type RecentSyncResponse struct {
+	Items []ClipboardItemResponse `json:"items"`
+	Total int64                   `json:"total"`
 }

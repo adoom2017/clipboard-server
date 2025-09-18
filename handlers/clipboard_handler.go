@@ -8,6 +8,7 @@ import (
 	"clipboard-server/utils"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -437,11 +438,9 @@ func (h *ClipboardHandler) BatchSync(c *gin.Context) {
 
 		// Create item
 		item := models.ClipboardItem{
-			UserID:   userID,
-			Content:  utils.SanitizeContent(itemReq.Content),
-			Type:     itemReq.Type,
-			IsSynced: true,
-			SyncedAt: utils.TimePtr(time.Now()),
+			UserID:  userID,
+			Content: utils.SanitizeContent(itemReq.Content),
+			Type:    itemReq.Type,
 		}
 
 		if itemReq.Timestamp != nil {
@@ -495,12 +494,11 @@ func (h *ClipboardHandler) GetStatistics(c *gin.Context) {
 	var totalItems int64
 	db.Model(&models.ClipboardItem{}).Where("user_id = ?", userID).Count(&totalItems)
 
-	// Synced items
-	var syncedItems int64
-	db.Model(&models.ClipboardItem{}).Where("user_id = ? AND is_synced = ?", userID, true).Count(&syncedItems)
+	// All items stored on server are considered synced
+	syncedItems := totalItems
 
-	// Unsynced items
-	unsyncedItems := totalItems - syncedItems
+	// Unsynced items (always 0 for server items)
+	unsyncedItems := int64(0)
 
 	// Total content size
 	var totalContentSize int64
@@ -557,6 +555,102 @@ func (h *ClipboardHandler) GetStatistics(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, stats)
+}
+
+// GetRecentSyncItems gets recently synced clipboard items
+func (h *ClipboardHandler) GetRecentSyncItems(c *gin.Context) {
+	userID, exists := auth.GetCurrentUserID(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Error:   "unauthorized",
+			Message: "user not authenticated",
+		})
+		return
+	}
+
+	db := database.GetDB()
+
+	// Get limit parameter (default 10, max 50)
+	limit := 10
+	if limitParam := c.Query("limit"); limitParam != "" {
+		if parsedLimit, err := strconv.Atoi(limitParam); err == nil && parsedLimit > 0 {
+			if parsedLimit > 50 {
+				limit = 50
+			} else {
+				limit = parsedLimit
+			}
+		}
+	}
+
+	// Get recent items ordered by created_at desc
+	var items []models.ClipboardItem
+	result := db.Where("user_id = ?", userID).
+		Order("created_at DESC").
+		Limit(limit).
+		Find(&items)
+
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "database error",
+			Message: "failed to fetch recent items",
+		})
+		return
+	}
+
+	// Get total count
+	var totalCount int64
+	db.Model(&models.ClipboardItem{}).Where("user_id = ?", userID).Count(&totalCount)
+
+	// Convert to response format
+	responseItems := make([]models.ClipboardItemResponse, len(items))
+	for i, item := range items {
+		responseItems[i] = item.ToResponse()
+	}
+
+	response := models.RecentSyncResponse{
+		Items: responseItems,
+		Total: totalCount,
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetLatestSyncItem gets the latest synced clipboard item
+func (h *ClipboardHandler) GetLatestSyncItem(c *gin.Context) {
+	userID, exists := auth.GetCurrentUserID(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Error:   "unauthorized",
+			Message: "user not authenticated",
+		})
+		return
+	}
+
+	db := database.GetDB()
+
+	// Get the latest item ordered by created_at desc
+	var item models.ClipboardItem
+	result := db.Where("user_id = ?", userID).
+		Order("created_at DESC").
+		First(&item)
+
+	if result.Error != nil {
+		if result.Error == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, models.ErrorResponse{
+				Error:   "no data found",
+				Message: "no clipboard items found",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "database error",
+			Message: "failed to fetch latest item",
+		})
+		return
+	}
+
+	response := item.ToResponse()
+	c.JSON(http.StatusOK, response)
 }
 
 // SyncSingleItem syncs a single clipboard item by client ID

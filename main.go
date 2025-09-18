@@ -123,6 +123,8 @@ func setupRoutes(router *gin.Engine) {
 			clipboardGroup.POST("/sync", clipboardHandler.BatchSync)
 			clipboardGroup.POST("/sync-single", clipboardHandler.SyncSingleItem) // 新增单项同步接口
 			clipboardGroup.GET("/statistics", clipboardHandler.GetStatistics)
+			clipboardGroup.GET("/recent", clipboardHandler.GetRecentSyncItems) // 新增最近同步接口
+			clipboardGroup.GET("/latest", clipboardHandler.GetLatestSyncItem) // 新增获取最新单条记录接口
 		}
 	}
 

@@ -125,7 +125,6 @@ func CreateIndexes() error {
 	indexes := []string{
 		"CREATE INDEX IF NOT EXISTS idx_clipboard_items_user_timestamp ON clipboard_items(user_id, timestamp DESC);",
 		"CREATE INDEX IF NOT EXISTS idx_clipboard_items_type ON clipboard_items(type);",
-		"CREATE INDEX IF NOT EXISTS idx_clipboard_items_synced ON clipboard_items(is_synced);",
 		"CREATE INDEX IF NOT EXISTS idx_clipboard_items_content ON clipboard_items(content);",
 		"CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);",
 		"CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);",
@@ -147,8 +146,8 @@ func Cleanup(daysOld int) error {
 		return fmt.Errorf("daysOld must be greater than 0")
 	}
 
-	result := DB.Where("is_synced = ? AND synced_at < datetime('now', '-' || ? || ' days')",
-		true, daysOld).Delete(&models.ClipboardItem{})
+	result := DB.Where("created_at < datetime('now', '-' || ? || ' days')",
+		daysOld).Delete(&models.ClipboardItem{})
 
 	if result.Error != nil {
 		return fmt.Errorf("failed to cleanup old clipboard items: %v", result.Error)
