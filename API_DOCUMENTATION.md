@@ -249,8 +249,6 @@ GET /api/v1/clipboard/items
       "id": "441dd0d1-7576-46f4-ad0a-7ecb17e602db",
       "content": "Hello World - Test Clipboard Item",
       "type": "text",
-      "is_synced": true,
-      "synced_at": "2025-09-17T13:41:32.130Z",
       "timestamp": "2025-09-17T13:41:32.130Z",
       "created_at": "2025-09-17T13:41:32.130Z"
     }
@@ -293,8 +291,6 @@ POST /api/v1/clipboard/items
   "id": "441dd0d1-7576-46f4-ad0a-7ecb17e602db",
   "content": "Hello World - Test Clipboard Item",
   "type": "text",
-  "is_synced": false,
-  "synced_at": null,
   "timestamp": "2025-09-17T13:41:32.130Z",
   "created_at": "2025-09-17T13:41:32.130Z"
 }
@@ -318,8 +314,6 @@ GET /api/v1/clipboard/items/:id
   "id": "441dd0d1-7576-46f4-ad0a-7ecb17e602db",
   "content": "Hello World - Test Clipboard Item",
   "type": "text",
-  "is_synced": true,
-  "synced_at": "2025-09-17T13:41:32.130Z",
   "timestamp": "2025-09-17T13:41:32.130Z",
   "created_at": "2025-09-17T13:41:32.130Z"
 }
@@ -351,8 +345,6 @@ PUT /api/v1/clipboard/items/:id
   "id": "441dd0d1-7576-46f4-ad0a-7ecb17e602db",
   "content": "Updated clipboard content",
   "type": "text",
-  "is_synced": false,
-  "synced_at": null,
   "timestamp": "2025-09-17T13:45:32.130Z",
   "created_at": "2025-09-17T13:41:32.130Z"
 }
@@ -413,8 +405,6 @@ POST /api/v1/clipboard/sync
       "id": "0a423099-038a-4eca-94dd-dd0006a905b2",
       "content": "Batch sync item 1",
       "type": "text",
-      "is_synced": true,
-      "synced_at": "2025-09-17T13:42:15.095Z",
       "timestamp": "2025-09-17T13:41:00Z",
       "created_at": "2025-09-17T13:42:15.095Z"
     }
@@ -437,8 +427,8 @@ GET /api/v1/clipboard/statistics
 ```json
 {
   "total_items": 3,
-  "synced_items": 2,
-  "unsynced_items": 1,
+  "synced_items": 3,
+  "unsynced_items": 0,
   "total_content_size": 67,
   "type_distribution": {
     "text": 3
@@ -449,6 +439,69 @@ GET /api/v1/clipboard/statistics
       "count": 3
     }
   ]
+}
+```
+
+#### 4.8 获取最近同步项目
+```http
+GET /api/v1/clipboard/recent
+```
+
+**描述**: 获取用户最近同步的剪贴板项目列表
+
+**需要认证**: 是
+
+**查询参数**:
+- `limit` (可选): 返回项目数量，默认10，最大50
+
+**响应** (200 OK):
+```json
+{
+  "items": [
+    {
+      "id": "4c008c7d-ae83-4cb4-bbe6-91fad3574967",
+      "content": "最新的测试内容",
+      "type": "text",
+      "timestamp": "2025-09-18T11:17:41.165Z",
+      "created_at": "2025-09-18T08:21:17.211Z"
+    },
+    {
+      "id": "2b117f6c-9d72-4a3b-ad5e-8af4e2c1b856",
+      "content": "之前的内容",
+      "type": "text", 
+      "timestamp": "2025-09-18T10:15:23.445Z",
+      "created_at": "2025-09-18T07:30:15.332Z"
+    }
+  ],
+  "total": 25
+}
+```
+
+#### 4.9 获取最新项目
+```http
+GET /api/v1/clipboard/latest
+```
+
+**描述**: 获取用户最新的单条剪贴板项目
+
+**需要认证**: 是
+
+**响应** (200 OK):
+```json
+{
+  "id": "4c008c7d-ae83-4cb4-bbe6-91fad3574967",
+  "content": "最新的测试内容",
+  "type": "text",
+  "timestamp": "2025-09-18T11:17:41.165Z",
+  "created_at": "2025-09-18T08:21:17.211Z"
+}
+```
+
+**响应** (404 Not Found) - 无数据时:
+```json
+{
+  "error": "no data found",
+  "message": "no clipboard items found"
 }
 ```
 
