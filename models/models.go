@@ -96,8 +96,8 @@ type ClipboardItem struct {
 	Content   string        `json:"content" gorm:"type:text"`
 	Type      ClipboardType `json:"type" gorm:"type:varchar(20);default:'text'"`
 	Timestamp time.Time     `json:"timestamp" gorm:"index"`
-	CreatedAt time.Time     `json:"created_at"`
-	UpdatedAt time.Time     `json:"updated_at"`
+	CreatedAt time.Time     `json:"created_at" gorm:"autoCreateTime:nano"`
+	UpdatedAt time.Time     `json:"updated_at" gorm:"autoUpdateTime:nano"`
 }
 
 // User model
@@ -123,6 +123,16 @@ func (c *ClipboardItem) BeforeCreate(tx *gorm.DB) error {
 	if c.Timestamp.IsZero() {
 		c.Timestamp = time.Now()
 	}
+	if c.CreatedAt.IsZero() {
+		c.CreatedAt = time.Now()
+	}
+	c.UpdatedAt = time.Now()
+	return nil
+}
+
+// BeforeUpdate hook to update timestamp
+func (c *ClipboardItem) BeforeUpdate(tx *gorm.DB) error {
+	c.UpdatedAt = time.Now()
 	return nil
 }
 
@@ -157,6 +167,7 @@ type ClipboardItemResponse struct {
 	Type      ClipboardType `json:"type"`
 	Timestamp time.Time     `json:"timestamp"`
 	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
 }
 
 // ToResponse converts to response structure
@@ -167,6 +178,7 @@ func (c *ClipboardItem) ToResponse() ClipboardItemResponse {
 		Type:      c.Type,
 		Timestamp: c.Timestamp,
 		CreatedAt: c.CreatedAt,
+		UpdatedAt: c.UpdatedAt,
 	}
 }
 

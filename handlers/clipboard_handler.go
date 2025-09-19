@@ -628,10 +628,10 @@ func (h *ClipboardHandler) GetLatestSyncItem(c *gin.Context) {
 
 	db := database.GetDB()
 
-	// Get the latest item ordered by created_at desc
+	// Get the latest item ordered by updated_at desc
 	var item models.ClipboardItem
 	result := db.Where("user_id = ?", userID).
-		Order("created_at DESC").
+		Order("updated_at DESC").
 		First(&item)
 
 	if result.Error != nil {
