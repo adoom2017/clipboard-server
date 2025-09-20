@@ -118,14 +118,14 @@ func TruncateString(s string, maxLength int) string {
 
 func SanitizeContent(content string) string {
 	patterns := []string{
-		"password",
-		"passwd",
-		"pwd",
-		"secret",
-		"token",
-		"key",
-		"auth",
-	}
+	//	"password",
+	//	"passwd",
+	//	"pwd",
+	//	"secret",s
+	//	"token",S
+	//	"key",S
+	//	"auth",
+    }
 
 	lowerContent := strings.ToLower(content)
 	for _, pattern := range patterns {
