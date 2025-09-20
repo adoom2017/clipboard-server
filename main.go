@@ -89,6 +89,10 @@ func setupMiddleware(router *gin.Engine) {
 	router.Use(middleware.RateLimit())
 	router.Use(middleware.ContentSizeLimit())
 	router.Use(middleware.RequestLogger())
+
+	// 添加详细的HTTP请求和响应日志中间件
+	// 注意：这会产生大量日志输出，建议仅在开发或调试时使用
+	router.Use(middleware.DetailedHTTPLogger())
 }
 
 func setupRoutes(router *gin.Engine) {

@@ -657,6 +657,7 @@ func (h *ClipboardHandler) GetLatestSyncItem(c *gin.Context) {
 func (h *ClipboardHandler) SyncSingleItem(c *gin.Context) {
 	userID, exists := auth.GetCurrentUserID(c)
 	if !exists {
+		log.Printf("[SyncSingleItem] 用户未认证")
 		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
 			Error:   "unauthorized",
 			Message: "user not authenticated",
@@ -673,6 +674,7 @@ func (h *ClipboardHandler) SyncSingleItem(c *gin.Context) {
 
 	var req SyncSingleItemRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		log.Printf("[SyncSingleItem] JSON解析失败: %v", err)
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Error:   "invalid request",
 			Message: err.Error(),
@@ -683,6 +685,7 @@ func (h *ClipboardHandler) SyncSingleItem(c *gin.Context) {
 	// Validate content size
 	cfg := config.GetConfig()
 	if utils.GetContentSize(req.Content) > cfg.MaxContentSize {
+		log.Printf("[SyncSingleItem] 内容过大: %d > %d, client_id=%s", utils.GetContentSize(req.Content), cfg.MaxContentSize, req.ClientID)
 		c.JSON(http.StatusRequestEntityTooLarge, models.ErrorResponse{
 			Error:   "content too large",
 			Message: "content size exceeds limit",
@@ -697,6 +700,7 @@ func (h *ClipboardHandler) SyncSingleItem(c *gin.Context) {
 
 	// Validate content type
 	if !utils.IsValidContentType(string(req.Type)) {
+		log.Printf("[SyncSingleItem] 内容类型无效: %s, client_id=%s", req.Type, req.ClientID)
 		c.JSON(http.StatusBadRequest, models.ErrorResponse{
 			Error:   "invalid content type",
 			Message: "unsupported content type",

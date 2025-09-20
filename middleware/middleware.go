@@ -1,8 +1,11 @@
 package middleware
 
 import (
+	"bytes"
 	"clipboard-server/config"
 	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -184,4 +187,118 @@ func HealthCheck() gin.HandlerFunc {
 		}
 		c.Next()
 	}
+}
+
+// DetailedHTTPLogger 详细的HTTP请求和响应日志中间件
+func DetailedHTTPLogger() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		startTime := time.Now()
+
+		// 获取请求ID
+		requestID := c.GetString("RequestID")
+		if requestID == "" {
+			requestID = generateRequestID()
+			c.Set("RequestID", requestID)
+		}
+
+		// 读取请求体
+		var requestBody []byte
+		if c.Request.Body != nil && (c.Request.Method == "POST" || c.Request.Method == "PUT" || c.Request.Method == "PATCH") {
+			requestBody, _ = io.ReadAll(c.Request.Body)
+			c.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
+		}
+
+		// 创建响应记录器
+		responseWriter := &responseWriter{
+			ResponseWriter: c.Writer,
+			body:           bytes.NewBufferString(""),
+		}
+		c.Writer = responseWriter
+
+		// 记录请求信息
+		log.Printf("[HTTP-REQ][%s] ============ Request Start ============", requestID)
+		log.Printf("[HTTP-REQ][%s] Method: %s", requestID, c.Request.Method)
+		log.Printf("[HTTP-REQ][%s] URL: %s", requestID, c.Request.URL.String())
+		log.Printf("[HTTP-REQ][%s] Proto: %s", requestID, c.Request.Proto)
+		log.Printf("[HTTP-REQ][%s] Host: %s", requestID, c.Request.Host)
+		log.Printf("[HTTP-REQ][%s] RemoteAddr: %s", requestID, c.Request.RemoteAddr)
+		log.Printf("[HTTP-REQ][%s] UserAgent: %s", requestID, c.Request.UserAgent())
+
+		// 记录请求头
+		log.Printf("[HTTP-REQ][%s] Headers:", requestID)
+		for name, values := range c.Request.Header {
+			for _, value := range values {
+				// 隐藏敏感信息
+				if strings.ToLower(name) == "authorization" {
+					if len(value) > 20 {
+						value = value[:20] + "..."
+					}
+				}
+				log.Printf("[HTTP-REQ][%s]   %s: %s", requestID, name, value)
+			}
+		}
+
+		// 记录请求体（如果存在且不为空）
+		if len(requestBody) > 0 {
+			bodyStr := string(requestBody)
+			// 限制日志长度，避免过长的内容
+			if len(bodyStr) > 1000 {
+				bodyStr = bodyStr[:1000] + "... (truncated)"
+			}
+			log.Printf("[HTTP-REQ][%s] Body: %s", requestID, bodyStr)
+		}
+
+		// 处理请求
+		c.Next()
+
+		// 计算处理时间
+		duration := time.Since(startTime)
+
+		// 记录响应信息
+		log.Printf("[HTTP-RESP][%s] ============ Response Start ============", requestID)
+		log.Printf("[HTTP-RESP][%s] Status: %d", requestID, responseWriter.status)
+		log.Printf("[HTTP-RESP][%s] Duration: %v", requestID, duration)
+
+		// 记录响应头
+		log.Printf("[HTTP-RESP][%s] Headers:", requestID)
+		for name, values := range c.Writer.Header() {
+			for _, value := range values {
+				log.Printf("[HTTP-RESP][%s]   %s: %s", requestID, name, value)
+			}
+		}
+
+		// 记录响应体
+		responseBody := responseWriter.body.String()
+		if responseBody != "" {
+			// 限制响应体日志长度
+			if len(responseBody) > 1000 {
+				responseBody = responseBody[:1000] + "... (truncated)"
+			}
+			log.Printf("[HTTP-RESP][%s] Body: %s", requestID, responseBody)
+		}
+
+		log.Printf("[HTTP-RESP][%s] ============ Response End ============", requestID)
+	}
+}
+
+// responseWriter 包装gin.ResponseWriter以捕获响应体
+type responseWriter struct {
+	gin.ResponseWriter
+	body   *bytes.Buffer
+	status int
+}
+
+func (w *responseWriter) Write(b []byte) (int, error) {
+	w.body.Write(b)
+	return w.ResponseWriter.Write(b)
+}
+
+func (w *responseWriter) WriteHeader(statusCode int) {
+	w.status = statusCode
+	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (w *responseWriter) WriteString(s string) (int, error) {
+	w.body.WriteString(s)
+	return w.ResponseWriter.WriteString(s)
 }
