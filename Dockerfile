@@ -33,7 +33,8 @@ RUN go build -a -ldflags="-s -w" -o main .
 FROM debian:bullseye-slim
 
 # 安装必要的运行时包
-RUN apt-get update && apt-get install -y \
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list \
+    && apt-get update && apt-get install -y \
     ca-certificates \
     sqlite3 \
     wget \
@@ -53,8 +54,7 @@ COPY docker-entrypoint.sh .
 RUN chmod +x docker-entrypoint.sh
 
 # 创建必要的目录并设置正确的权限
-RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list \
-    && mkdir -p data logs uploads && \
+RUN mkdir -p data logs uploads && \
     chown -R appuser:appgroup /app && \
     chmod -R 755 /app
 
