@@ -20,8 +20,9 @@ services:
       - ENABLE_CLEANUP=true
       - CLEANUP_INTERVAL=24h
     volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
+      # 使用 Docker 命名卷而不是绑定挂载，避免权限问题
+      - clipboard_data:/app/data
+      - clipboard_logs:/app/logs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
@@ -35,3 +36,9 @@ services:
 networks:
   clipboard-network:
     driver: bridge
+
+volumes:
+  clipboard_data:
+    driver: local
+  clipboard_logs:
+    driver: local
