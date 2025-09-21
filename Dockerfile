@@ -41,17 +41,20 @@ RUN apt-get update && apt-get install -y \
 # 创建应用用户
 RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
-# 设置工作目录
-WORKDIR /root/
+# 设置工作目录 - 使用应用用户可访问的目录
+WORKDIR /app
 
 # 从构建阶段复制二进制文件
 COPY --from=builder /app/main .
 
-# 创建必要的目录
-RUN mkdir -p data logs uploads
+# 复制启动脚本
+COPY docker-entrypoint.sh .
+RUN chmod +x docker-entrypoint.sh
 
-# 设置权限
-RUN chown -R appuser:appgroup /root/
+# 创建必要的目录并设置正确的权限
+RUN mkdir -p data logs uploads && \
+    chown -R appuser:appgroup /app && \
+    chmod -R 755 /app
 
 # 切换到非root用户
 USER appuser
@@ -67,5 +70,6 @@ ENV GO_ENV=production
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
 
-# 运行应用
+# 使用启动脚本
+ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["./main"]

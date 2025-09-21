@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"clipboard-server/models"
 
@@ -21,9 +22,13 @@ func Initialize() error {
 		dbPath = "data/clipboard.db"
 	}
 
-	if err := os.MkdirAll("data", 0755); err != nil {
-		return fmt.Errorf("failed to create data directory: %v", err)
+	// 从数据库路径中提取目录路径并创建目录
+	dbDir := filepath.Dir(dbPath)
+	if err := os.MkdirAll(dbDir, 0755); err != nil {
+		return fmt.Errorf("failed to create database directory %s: %v", dbDir, err)
 	}
+
+	fmt.Printf("Created/verified database directory: %s\n", dbDir)
 
 	logLevel := logger.Silent
 	if os.Getenv("DB_DEBUG") == "true" {
