@@ -40,10 +40,7 @@ RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-# 创建应用用户
-RUN groupadd -r appgroup && useradd -r -g appgroup appuser
-
-# 设置工作目录 - 使用应用用户可访问的目录
+# 设置工作目录
 WORKDIR /app
 
 # 从构建阶段复制二进制文件
@@ -53,13 +50,8 @@ COPY --from=builder /app/main .
 COPY docker-entrypoint.sh .
 RUN chmod +x docker-entrypoint.sh
 
-# 创建必要的目录并设置正确的权限
-RUN mkdir -p data logs uploads && \
-    chown -R appuser:appgroup /app && \
-    chmod -R 755 /app
-
-# 切换到非root用户
-USER appuser
+# 创建必要的目录
+RUN mkdir -p data logs uploads
 
 # 暴露端口
 EXPOSE 8080
