@@ -1,136 +1,207 @@
-# Clipboard Sync Server
+# 剪贴板同步服务器 (Clipboard Sync Server)
 
-基于 Go + Gin 框架开发的剪贴板同步服务端，为 Flutter 客户端提供剪贴板数据的云端存储和同步功能。
+基于 Go + Gin 框架开发的剪贴板同步服务端，为 Flutter 客户端提供剪贴板数据的云端存储和同步功能。支持用户认证、数据同步、实时监控和高性能存储。
 
-## 功能特性
+### 🐳 容器化部署
+- **Docker 支持**：完整的容器化部署方案
+- **Docker Compose**：一键部署的编排配置
+- **Nginx 代理**：反向代理和负载均衡支持
+- **SSL 证书**：HTTPS 安全连接支持
 
-- 🔐 **用户认证**：JWT 令牌认证，支持注册、登录、令牌刷新
-- 📋 **剪贴板管理**：支持文本、图片、文件等多种类型的剪贴板内容
-- 🔄 **批量同步**：支持批量上传和同步剪贴板项目
-- 📊 **数据统计**：提供用户剪贴板使用统计和分析
-- 🛡️ **安全防护**：限流、CORS、内容大小限制等安全措施
-- 🗄️ **SQLite 数据库**：轻量级数据库，支持 WAL 模式提升性能
-- 📖 **API 文档**：完整的 RESTful API 接口
+## 🏗️ 技术架构
 
-## 快速开始
+### 技术栈
+- **Web 框架**：Gin (Go 1.21+)
+- **数据库**：SQLite + GORM ORM
+- **认证**：JWT (JSON Web Tokens)
+
+### 项目结构
+
+```
+server/
+├── main.go                     # 主入口文件和路由设置
+├── go.mod                      # Go 模块依赖
+├── go.sum                      # 依赖版本锁定
+├── Dockerfile                  # Docker 构建文件
+├── docker-compose.yml          # Docker Compose 编排
+├── .env.example                # 环境配置示例
+├── auth/                       # JWT 认证模块
+│   └── jwt.go                  # JWT Token 生成和验证
+├── config/                     # 配置管理
+│   └── config.go               # 配置加载和验证
+├── database/                   # 数据库相关
+│   └── database.go             # 数据库连接、迁移和操作
+├── handlers/                   # HTTP 请求处理器
+│   ├── auth_handler.go         # 用户认证处理器
+│   └── clipboard_handler.go    # 剪贴板数据处理器
+├── middleware/                 # HTTP 中间件
+│   └── middleware.go           # CORS、限流、日志等中间件
+├── models/                     # 数据模型
+│   └── models.go               # 数据结构定义和验证
+├── utils/                      # 工具函数
+│   └── utils.go                # 通用工具函数
+├── data/                       # 数据存储目录
+│   └── clipboard.db            # SQLite 数据库文件
+├── logs/                       # 日志文件目录
+├── ssl/                        # SSL 证书目录
+└── nginx/                      # Nginx 配置文件
+    └── nginx.conf
+```
+
+## 🚀 快速开始
 
 ### 环境要求
 
-- Go 1.21 或更高版本
-- SQLite3
+- **Go**: 1.21 或更高版本
+- **SQLite**: 3.35+ (通常包含在 Go SQLite 驱动中)
+- **Docker**: 20.10+ (可选，用于容器化部署)
+- **操作系统**: Linux, macOS, Windows
 
-### 安装部署
+### 本地开发部署
 
 1. **克隆项目**
-```bash
-git clone <repository-url>
-cd clipboard-sync-server
-```
+   ```bash
+   git clone https://github.com/your-repo/clipboard-auto.git
+   cd clipboard-auto/server
+   ```
 
 2. **安装依赖**
+   ```bash
+   go mod download
+   ```
+
+3. **配置环境变量**
+   ```bash
+   cp .env.example .env
+   # 编辑 .env 文件设置你的配置
+   vim .env
+   ```
+
+4. **创建必要目录**
+   ```bash
+   mkdir -p data logs uploads
+   ```
+
+5. **运行服务器**
+   ```bash
+   # 开发模式运行
+   go run main.go
+   
+   # 编译并运行
+   go build -o clipboard-server
+   ./clipboard-server
+   ```
+
+### Docker 容器化部署
+
+1. **构建镜像**
+   ```bash
+   docker build -t clipboard-server .
+   ```
+
+2. **使用 Docker Compose 一键部署**
+   ```bash
+   docker-compose up -d
+   ```
+
+3. **查看服务状态**
+   ```bash
+   docker-compose ps
+   docker-compose logs -f clipboard-server
+   ```
+
+### 生产环境部署
+
+1. **使用 Docker Compose (推荐)**
+   ```bash
+   # 生产环境配置
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
+
+2. **直接部署**
+   ```bash
+   # 构建生产版本
+   CGO_ENABLED=1 GOOS=linux go build -a -ldflags="-s -w" -o clipboard-server
+   
+   # 设置环境变量
+   export GO_ENV=production
+   export GIN_MODE=release
+   
+   # 运行服务
+   ./clipboard-server
+   ```
+
+## ⚙️ 配置说明
+
+### 环境变量配置
+
+创建 `.env` 文件：
+
 ```bash
-go mod download
+# 服务器配置
+SERVER_HOST=0.0.0.0
+SERVER_PORT=8080
+
+# JWT 配置
+JWT_SECRET=your-super-secure-secret-key-change-in-production
+JWT_EXPIRE_HOUR=168  # 7天
+
+# 数据库配置
+DB_PATH=data/clipboard.db
+DB_DEBUG=false
+
+# CORS 配置
+CORS_ALLOW_ORIGINS=*
+CORS_ALLOW_METHODS=GET,POST,PUT,DELETE,OPTIONS
+CORS_ALLOW_HEADERS=Origin,Content-Type,Authorization,X-Requested-With
+
+# 日志配置
+LOG_LEVEL=info
+LOG_FILE=logs/server.log
+
+# 内容限制
+MAX_CONTENT_SIZE=1048576    # 1MB
+CLEANUP_DAYS=30
+ENABLE_CLEANUP=true
+CLEANUP_INTERVAL=24h
+
+# 限流配置
+RATE_LIMIT_RPS=100
+RATE_LIMIT_BURST=200
+
+# 文件上传
+UPLOAD_MAX_SIZE=10485760    # 10MB
+UPLOAD_PATH=uploads/
+
+# 生产环境
+GO_ENV=development          # development/production
 ```
 
-3. **配置环境**
+### 安全配置
+
+#### JWT 安全设置
 ```bash
-cp .env.example .env
-# 编辑 .env 文件，修改相关配置
+# 生产环境必须修改
+JWT_SECRET=your-256-bit-secret-key-here
+JWT_EXPIRE_HOUR=168  # Token有效期
 ```
 
-4. **运行服务**
+#### CORS 安全设置
 ```bash
-go run main.go
+# 生产环境应指定具体域名
+CORS_ALLOW_ORIGINS=https://yourdomain.com,https://app.yourdomain.com
 ```
 
-### 配置说明
+## 📡 API 接口文档
 
-主要配置项说明：
+### 基础信息
 
-| 配置项 | 默认值 | 说明 |
-|-------|-------|------|
-| SERVER_HOST | localhost | 服务器监听地址 |
-| SERVER_PORT | 8080 | 服务器监听端口 |
-| JWT_SECRET | - | JWT 签名密钥（生产环境必须修改）|
-| JWT_EXPIRE_HOUR | 168 | JWT 令牌过期时间（小时）|
-| DB_PATH | data/clipboard.db | SQLite 数据库文件路径 |
-| MAX_CONTENT_SIZE | 1048576 | 剪贴板内容最大大小（字节）|
-| RATE_LIMIT_RPS | 100 | 限流：每秒最大请求数 |
+- **Base URL**: `http://localhost:8080/api/v1`
+- **认证方式**: Bearer Token (JWT)
+- **Content-Type**: `application/json`
+- **API 版本**: v1
 
-更多配置项请参考 `.env.example` 文件。
-
-### 构建部署
-
-#### 本地构建
-```bash
-# 构建可执行文件
-go build -o clipboard-sync-server
-
-# 运行
-./clipboard-sync-server
-```
-
-#### Docker 部署
-
-##### 简单部署（仅后端服务）
-```bash
-# 构建镜像
-docker build -t clipboard-sync-server .
-
-# 运行容器
-docker run -p 8080:8080 -v $(pwd)/data:/app/data clipboard-sync-server
-```
-
-##### Docker Compose 部署（推荐）
-
-本项目提供了包含 Nginx 反向代理的完整 Docker Compose 配置：
-
-```bash
-# 1. 配置 Nginx（自动选择配置）
-./configure-nginx.sh    # Linux/Mac
-configure-nginx.bat     # Windows
-
-# 2. 启动所有服务
-docker compose up -d --build
-
-# 3. 查看服务状态
-docker compose ps
-
-# 4. 查看日志
-docker compose logs -f
-```
-
-**服务架构**：
-- `clipboard-sync-server`: 后端 Go 服务（端口 8080）
-- `nginx`: Nginx 反向代理
-  - HTTP 模式：端口 80, 8081（调试）
-  - HTTPS 模式：端口 80（重定向）, 443, 8080（开发）
-
-**配置选择**：
-- **HTTP 模式**：适用于开发环境和内网部署，无需 SSL 证书
-- **HTTPS 模式**：适用于生产环境，需要 SSL 证书
-
-**SSL 证书管理**：
-```bash
-# 生成自签名证书（用于测试）
-./generate-ssl.sh       # Linux/Mac
-generate-ssl.bat        # Windows
-
-# 或放置您的证书文件到 ssl/ 目录：
-# ssl/server.crt (证书文件)
-# ssl/server.key (私钥文件)
-```
-
-**服务访问**：
-- HTTP 模式：`http://localhost/api/v1/`
-- HTTPS 模式：`https://localhost/api/v1/`
-- 健康检查：`http://localhost/health`
-
-详细的 Nginx 配置说明请参考：[nginx.conf/README.md](nginx.conf/README.md)
-
-## API 接口
-
-### 认证相关
+### 认证接口 (Authentication)
 
 #### 用户注册
 ```http
@@ -138,9 +209,22 @@ POST /api/v1/auth/register
 Content-Type: application/json
 
 {
-  "username": "user123",
-  "email": "user@example.com",
+  "username": "testuser",
+  "email": "test@example.com",
   "password": "password123"
+}
+```
+
+**响应**:
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "username": "testuser",
+  "email": "test@example.com",
+  "is_active": true,
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T12:00:00Z",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
@@ -150,18 +234,72 @@ POST /api/v1/auth/login
 Content-Type: application/json
 
 {
-  "username": "user123",
+  "username": "testuser",     # 支持用户名或邮箱
   "password": "password123"
 }
 ```
 
-### 剪贴板相关
+**响应**:
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "username": "testuser",
+  "email": "test@example.com",
+  "is_active": true,
+  "last_login": "2024-01-01T12:00:00Z",
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
 
-#### 获取剪贴板列表
+#### Token 刷新
 ```http
-GET /api/v1/clipboard/items?page=1&page_size=20
+POST /api/v1/auth/refresh
+Authorization: Bearer <current_token>
+```
+
+**响应**:
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expires_at": "2024-01-08T12:00:00Z"
+}
+```
+
+### 用户接口 (User)
+
+#### 获取用户资料
+```http
+GET /api/v1/user/profile
 Authorization: Bearer <token>
 ```
+
+**响应**:
+```json
+{
+  "id": "550e8400-e29b-41d4-a716-446655440000",
+  "username": "testuser",
+  "email": "test@example.com",
+  "is_active": true,
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T12:00:00Z",
+  "last_login": "2024-01-01T12:00:00Z"
+}
+```
+
+#### 用户登出
+```http
+POST /api/v1/user/logout
+Authorization: Bearer <token>
+```
+
+**响应**:
+```json
+{
+  "message": "logout successful"
+}
+```
+
+### 剪贴板接口 (Clipboard)
 
 #### 创建剪贴板项目
 ```http
@@ -170,9 +308,113 @@ Authorization: Bearer <token>
 Content-Type: application/json
 
 {
-  "content": "Hello World",
+  "id": "client-generated-uuid",
+  "client_id": "device-unique-id",
+  "content": "Hello, World!",
   "type": "text",
-  "timestamp": "2023-12-01T10:00:00Z"
+  "timestamp": "2024-01-01T12:00:00.000000Z"
+}
+```
+
+**响应**:
+```json
+{
+  "id": "client-generated-uuid",
+  "content": "Hello, World!",
+  "type": "text",
+  "timestamp": "2024-01-01T12:00:00Z",
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T12:00:00Z"
+}
+```
+
+#### 获取剪贴板列表
+```http
+GET /api/v1/clipboard/items?page=1&page_size=20&type=text&since=2024-01-01T00:00:00Z&search=keyword
+Authorization: Bearer <token>
+```
+
+**查询参数**:
+- `page`: 页码 (默认: 1)
+- `page_size`: 每页数量 (默认: 20, 最大: 100)
+- `type`: 类型过滤 (`text`, `image`, `file`)
+- `since`: 时间过滤，获取指定时间后的数据
+- `search`: 内容搜索关键词
+
+**响应**:
+```json
+{
+  "items": [
+    {
+      "id": "uuid-1",
+      "content": "Hello, World!",
+      "type": "text",
+      "timestamp": "2024-01-01T12:00:00Z",
+      "created_at": "2024-01-01T12:00:00Z",
+      "updated_at": "2024-01-01T12:00:00Z"
+    }
+  ],
+  "total": 100,
+  "page": 1,
+  "page_size": 20,
+  "total_pages": 5,
+  "has_next": true,
+  "has_prev": false
+}
+```
+
+#### 获取单个剪贴板项目
+```http
+GET /api/v1/clipboard/items/{id}
+Authorization: Bearer <token>
+```
+
+**响应**:
+```json
+{
+  "id": "uuid-1",
+  "content": "Hello, World!",
+  "type": "text",
+  "timestamp": "2024-01-01T12:00:00Z",
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T12:00:00Z"
+}
+```
+
+#### 更新剪贴板项目
+```http
+PUT /api/v1/clipboard/items/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "content": "Updated content",
+  "type": "text"
+}
+```
+
+**响应**:
+```json
+{
+  "id": "uuid-1",
+  "content": "Updated content",
+  "type": "text",
+  "timestamp": "2024-01-01T12:00:00Z",
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T12:01:00Z"
+}
+```
+
+#### 删除剪贴板项目
+```http
+DELETE /api/v1/clipboard/items/{id}
+Authorization: Bearer <token>
+```
+
+**响应**:
+```json
+{
+  "message": "item deleted successfully"
 }
 ```
 
@@ -185,14 +427,60 @@ Content-Type: application/json
 {
   "items": [
     {
-      "content": "Item 1",
-      "type": "text"
+      "id": "client-uuid-1",
+      "client_id": "device-id",
+      "content": "Content 1",
+      "type": "text",
+      "timestamp": "2024-01-01T12:00:00.000000Z"
     },
     {
-      "content": "Item 2",
-      "type": "text"
+      "id": "client-uuid-2",
+      "client_id": "device-id",
+      "content": "Content 2",
+      "type": "text",
+      "timestamp": "2024-01-01T12:01:00.000000Z"
     }
   ]
+}
+```
+
+**响应**:
+```json
+{
+  "message": "sync completed",
+  "synchronized_count": 2,
+  "skipped_count": 0,
+  "failed_items": []
+}
+```
+
+#### 单项同步
+```http
+POST /api/v1/clipboard/sync-single
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "id": "client-uuid-1",
+  "client_id": "device-id",
+  "content": "Single item content",
+  "type": "text",
+  "timestamp": "2024-01-01T12:00:00.000000Z"
+}
+```
+
+**响应**:
+```json
+{
+  "message": "item synchronized successfully",
+  "item": {
+    "id": "client-uuid-1",
+    "content": "Single item content",
+    "type": "text",
+    "timestamp": "2024-01-01T12:00:00Z",
+    "created_at": "2024-01-01T12:00:00Z",
+    "updated_at": "2024-01-01T12:00:00Z"
+  }
 }
 ```
 
@@ -202,11 +490,88 @@ GET /api/v1/clipboard/statistics
 Authorization: Bearer <token>
 ```
 
-### 系统相关
+**响应**:
+```json
+{
+  "total_items": 1500,
+  "synced_items": 1450,
+  "unsynced_items": 50,
+  "total_content_size": 2048576,
+  "type_distribution": {
+    "text": 1200,
+    "image": 250,
+    "file": 50
+  },
+  "recent_activity": [
+    {
+      "date": "2024-01-01",
+      "count": 150
+    },
+    {
+      "date": "2023-12-31",
+      "count": 120
+    }
+  ]
+}
+```
+
+#### 获取最近同步项目
+```http
+GET /api/v1/clipboard/recent?limit=10
+Authorization: Bearer <token>
+```
+
+**响应**:
+```json
+{
+  "items": [
+    {
+      "id": "uuid-1",
+      "content": "Recent content",
+      "type": "text",
+      "timestamp": "2024-01-01T12:00:00Z",
+      "created_at": "2024-01-01T12:00:00Z",
+      "updated_at": "2024-01-01T12:00:00Z"
+    }
+  ]
+}
+```
+
+#### 获取最新单条记录
+```http
+GET /api/v1/clipboard/latest
+Authorization: Bearer <token>
+```
+
+**响应**:
+```json
+{
+  "id": "uuid-latest",
+  "content": "Latest clipboard content",
+  "type": "text",
+  "timestamp": "2024-01-01T12:00:00Z",
+  "created_at": "2024-01-01T12:00:00Z",
+  "updated_at": "2024-01-01T12:00:00Z"
+}
+```
+
+### 系统接口 (System)
 
 #### 健康检查
 ```http
 GET /api/v1/system/health
+```
+
+**响应**:
+```json
+{
+  "status": "ok",
+  "timestamp": "2024-01-01T12:00:00Z",
+  "service": "clipboard-sync-server",
+  "version": "1.0.0",
+  "database": "ok",
+  "uptime": "72h15m30s"
+}
 ```
 
 #### 系统信息
@@ -214,164 +579,100 @@ GET /api/v1/system/health
 GET /api/v1/system/info
 ```
 
-## 项目结构
-
-```
-server/
-├── main.go                 # 主入口文件
-├── go.mod                  # Go模块依赖
-├── .env.example            # 环境配置示例
-├── auth/                   # JWT认证模块
-│   └── jwt.go
-├── config/                 # 配置管理
-│   └── config.go
-├── database/              # 数据库相关
-│   └── database.go
-├── handlers/              # HTTP处理器
-│   ├── auth_handler.go    # 认证处理器
-│   └── clipboard_handler.go # 剪贴板处理器
-├── middleware/            # 中间件
-│   └── middleware.go
-├── models/               # 数据模型
-│   └── models.go
-├── utils/                # 工具函数
-│   └── utils.go
-├── data/                 # 数据目录（运行时创建）
-└── logs/                 # 日志目录（运行时创建）
+**响应**:
+```json
+{
+  "service": "clipboard-sync-server",
+  "version": "1.0.0",
+  "environment": "production",
+  "config": {
+    "max_content_size": 1048576,
+    "cleanup_days": 30,
+    "rate_limit_rps": 100,
+    "rate_limit_burst": 200,
+    "upload_max_size": 10485760
+  },
+  "timestamp": "2024-01-01T12:00:00Z",
+  "uptime": "72h15m30s"
+}
 ```
 
-## 数据库设计
-
-### 用户表 (users)
-| 字段 | 类型 | 说明 |
-|-----|------|-----|
-| id | VARCHAR | 主键，UUID |
-| username | VARCHAR | 用户名，唯一 |
-| email | VARCHAR | 邮箱，唯一 |
-| password | VARCHAR | 加密后的密码 |
-| token | VARCHAR | JWT令牌 |
-| is_active | BOOLEAN | 是否激活 |
-| created_at | DATETIME | 创建时间 |
-| updated_at | DATETIME | 更新时间 |
-
-### 剪贴板项目表 (clipboard_items)
-| 字段 | 类型 | 说明 |
-|-----|------|-----|
-| id | VARCHAR | 主键，UUID |
-| user_id | VARCHAR | 用户ID，外键 |
-| content | TEXT | 剪贴板内容 |
-| type | VARCHAR | 内容类型 |
-| is_synced | BOOLEAN | 是否已同步 |
-| synced_at | DATETIME | 同步时间 |
-| timestamp | DATETIME | 剪贴板创建时间 |
-| created_at | DATETIME | 记录创建时间 |
-| updated_at | DATETIME | 记录更新时间 |
-
-## 安全考虑
-
-1. **密码加密**：使用 bcrypt 加密存储密码
-2. **JWT 安全**：令牌过期机制，生产环境必须修改默认密钥
-3. **限流保护**：防止暴力请求攻击
-4. **CORS 配置**：限制跨域访问来源
-5. **内容过滤**：自动检测和隐藏敏感内容
-6. **大小限制**：限制请求和内容大小
-
-## 性能优化
-
-1. **数据库优化**
-   - 启用 SQLite WAL 模式
-   - 创建必要的索引
-   - 定期清理过期数据
-
-2. **内存优化**
-   - 分页查询大量数据
-   - 内容截断和压缩
-   - 连接池管理
-
-3. **缓存策略**
-   - JWT 令牌缓存
-   - 统计数据缓存
-
-## 监控和日志
-
-- **请求日志**：记录所有 API 请求
-- **错误日志**：记录应用程序错误
-- **性能指标**：响应时间、请求量等
-- **健康检查**：数据库连接状态检查
-
-## 开发指南
-
-### 添加新的 API 接口
-
-1. 在 `models/` 目录添加请求/响应模型
-2. 在 `handlers/` 目录添加处理器函数
-3. 在 `main.go` 中注册路由
-4. 更新 API 文档
-
-### 数据库迁移
-
-项目使用 GORM 的自动迁移功能，新增字段时：
-
-1. 修改 `models/` 中的结构体
-2. 重启应用，GORM 会自动更新表结构
-
-### 测试
-
-```bash
-# 运行所有测试
-go test ./...
-
-# 运行特定测试
-go test ./handlers -v
-
-# 生成测试覆盖率报告
-go test -cover ./...
+#### 系统统计
+```http
+GET /api/v1/system/stats
 ```
 
-## 故障排查
-
-### 常见问题
-
-1. **数据库锁定错误**
-   - 检查是否有多个程序同时访问数据库文件
-   - 确保数据目录有写权限
-
-2. **JWT 认证失败**
-   - 检查 JWT_SECRET 配置
-   - 确认令牌未过期
-
-3. **CORS 错误**
-   - 检查 CORS_ALLOW_ORIGINS 配置
-   - 确认客户端域名在允许列表中
-
-### 日志查看
-
-```bash
-# 查看应用日志
-tail -f logs/app.log
-
-# 查看错误日志
-grep ERROR logs/app.log
+**响应**:
+```json
+{
+  "timestamp": "2024-01-01T12:00:00Z",
+  "uptime": "72h15m30s",
+  "database": {
+    "status": "connected",
+    "open_connections": 5,
+    "in_use": 2,
+    "idle": 3,
+    "user_count": 150,
+    "clipboard_item_count": 1500
+  }
+}
 ```
 
-## 贡献指南
+### 通用响应格式
 
-1. Fork 项目
-2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
+#### 成功响应
+```json
+{
+  "message": "operation successful",
+  "data": { /* 具体数据 */ }
+}
+```
+
+#### 错误响应
+```json
+{
+  "error": "error_code",
+  "message": "详细错误描述",
+  "details": { /* 可选的额外信息 */ }
+}
+```
+
+#### HTTP 状态码
+- `200` OK - 请求成功
+- `201` Created - 资源创建成功
+- `400` Bad Request - 请求参数错误
+- `401` Unauthorized - 未授权或Token无效
+- `403` Forbidden - 权限不足
+- `404` Not Found - 资源不存在
+- `409` Conflict - 资源冲突
+- `429` Too Many Requests - 请求过于频繁
+- `500` Internal Server Error - 服务器内部错误
+
+
+## 📄 许可证
+
+本项目采用 MIT 许可证。详细信息请查看 [LICENSE](LICENSE) 文件。
+
+## 🤝 贡献指南
+
+欢迎贡献代码！请遵循以下步骤：
+
+1. Fork 本项目
+2. 创建功能分支：`git checkout -b feature/amazing-feature`
+3. 提交更改：`git commit -m 'Add amazing feature'`
+4. 推送到分支：`git push origin feature/amazing-feature`
 5. 打开 Pull Request
 
-## 许可证
+### 贡献规范
 
-本项目基于 MIT 许可证开源。详见 [LICENSE](LICENSE) 文件。
+- 遵循 Go 官方代码规范
+- 编写单元测试覆盖新功能
+- 更新相关文档
+- 提交前运行完整测试套件
 
-## 联系方式
+## 🙏 致谢
 
-- 项目地址：[GitHub Repository]
-- 问题反馈：[Issues]
-- 邮箱：[email@example.com]
-
----
-
-**注意**：生产环境部署前，请务必修改默认的 JWT_SECRET 和其他安全相关配置。
+- [Gin](https://github.com/gin-gonic/gin) - 高性能 Go Web 框架
+- [GORM](https://gorm.io/) - Go 对象关系映射库
+- [JWT-Go](https://github.com/dgrijalva/jwt-go) - JWT 实现库
+- [SQLite](https://www.sqlite.org/) - 嵌入式数据库
