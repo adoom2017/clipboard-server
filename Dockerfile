@@ -5,7 +5,8 @@ FROM golang:1.21-bullseye AS builder
 WORKDIR /app
 
 # 更新包列表并安装必要的包
-RUN apt-get update && apt-get install -y \
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list \
+    && apt-get update && apt-get install -y \
     gcc \
     libc6-dev \
     sqlite3 \
@@ -52,7 +53,8 @@ COPY docker-entrypoint.sh .
 RUN chmod +x docker-entrypoint.sh
 
 # 创建必要的目录并设置正确的权限
-RUN mkdir -p data logs uploads && \
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list \
+    && mkdir -p data logs uploads && \
     chown -R appuser:appgroup /app && \
     chmod -R 755 /app
 

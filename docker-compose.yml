@@ -8,10 +8,17 @@ services:
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8080
       - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - JWT_EXPIRE_HOUR=24
       - DB_PATH=data/clipboard.db
+      - DB_DEBUG=false
       - MAX_CONTENT_SIZE=1048576
       - RATE_LIMIT_RPS=100
       - CORS_ALLOW_ORIGINS=*
+      - LOG_LEVEL=info
+      - LOG_FILE=logs/server.log
+      - CLEANUP_DAYS=30
+      - ENABLE_CLEANUP=true
+      - CLEANUP_INTERVAL=24h
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -24,29 +31,6 @@ services:
       start_period: 40s
     networks:
       - clipboard-network
-
-  # 反向代理服务器
-  nginx:
-    build:
-      context: ./nginx
-      dockerfile: Dockerfile
-    ports:
-      - "80:80"
-    volumes:
-      - ./ssl:/etc/nginx/ssl
-    depends_on:
-      clipboard-sync-server:
-        condition: service_healthy
-    networks:
-      - clipboard-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "nginx", "-t"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    environment:
-      - TZ=Asia/Shanghai
 
 networks:
   clipboard-network:
