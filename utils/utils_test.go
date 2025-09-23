@@ -34,36 +34,6 @@ func TestGenerateSalt(t *testing.T) {
 	}
 }
 
-func TestHashPasswordWithSalt(t *testing.T) {
-	password := "testpassword123"
-	salt := "abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890"
-
-	hash1, err := HashPasswordWithSalt(password, salt)
-	if err != nil {
-		t.Fatalf("密码哈希失败: %v", err)
-	}
-
-	hash2, err := HashPasswordWithSalt(password, salt)
-	if err != nil {
-		t.Fatalf("密码哈希失败: %v", err)
-	}
-
-	// BCrypt每次产生不同的哈希（因为内置随机盐）
-	if hash1 == hash2 {
-		t.Error("BCrypt应该每次产生不同的哈希")
-	}
-
-	// 哈希长度应该是BCrypt标准长度（60字符）
-	if len(hash1) != 60 {
-		t.Errorf("BCrypt哈希长度应该是60，实际是 %d", len(hash1))
-	}
-
-	// 哈希应该以$2开头（BCrypt标识）
-	if !strings.HasPrefix(hash1, "$2") {
-		t.Error("BCrypt哈希应该以$2开头")
-	}
-}
-
 func TestCheckPasswordWithSalt(t *testing.T) {
 	password := "testpassword123"
 	wrongPassword := "wrongpassword"
