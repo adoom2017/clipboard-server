@@ -115,6 +115,7 @@ func setupRoutes(router *gin.Engine) {
 		{
 			userGroup.GET("/profile", authHandler.GetProfile)
 			userGroup.POST("/logout", authHandler.Logout)
+			userGroup.PUT("/password", authHandler.ChangePassword)
 		}
 
 		clipboardGroup := authenticatedGroup.Group("/clipboard")

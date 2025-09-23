@@ -334,3 +334,97 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, user)
 }
+
+// ChangePassword change user password
+func (h *AuthHandler) ChangePassword(c *gin.Context) {
+	userID, exists := auth.GetCurrentUserID(c)
+	if !exists {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Error:   "unauthorized",
+			Message: "user not authenticated",
+		})
+		return
+	}
+
+	var req models.ChangePasswordRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error:   "invalid request",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	// Validate new password
+	if err := utils.ValidatePassword(req.NewPassword); err != nil {
+		c.JSON(http.StatusBadRequest, models.ErrorResponse{
+			Error:   "invalid new password",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	db := database.GetDB()
+	var user models.User
+
+	// Get current user
+	if err := db.Where("id = ?", userID).First(&user).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, models.ErrorResponse{
+				Error:   "user not found",
+				Message: "user profile not found",
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "database error",
+			Message: "failed to get user profile",
+		})
+		return
+	}
+
+	// Verify current password
+	if !utils.CheckPasswordWithSalt(req.CurrentPassword, user.Salt, user.Password) {
+		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
+			Error:   "invalid current password",
+			Message: "current password is incorrect",
+		})
+		return
+	}
+
+	// Generate new salt
+	newSalt, err := utils.GenerateSalt()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "salt generation failed",
+			Message: "failed to generate new salt",
+		})
+		return
+	}
+
+	// Hash new password with new salt
+	hashedNewPassword, err := utils.HashPasswordWithSalt(req.NewPassword, newSalt)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "password encryption failed",
+			Message: "failed to encrypt new password",
+		})
+		return
+	}
+
+	// Update user password and salt
+	if err := db.Model(&user).Updates(models.User{
+		Password: hashedNewPassword,
+		Salt:     newSalt,
+	}).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "update failed",
+			Message: "failed to update password",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, models.SuccessResponse{
+		Message: "password changed successfully",
+	})
+}

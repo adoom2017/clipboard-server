@@ -215,6 +215,12 @@ type RegisterRequest struct {
 	Password string `json:"password" binding:"required,min=6"`
 }
 
+// ChangePasswordRequest for changing password
+type ChangePasswordRequest struct {
+	CurrentPassword string `json:"current_password" binding:"required"`
+	NewPassword     string `json:"new_password" binding:"required,min=6"`
+}
+
 // LoginResponse for login response
 type LoginResponse struct {
 	Token string `json:"token"`
