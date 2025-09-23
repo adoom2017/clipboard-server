@@ -5,6 +5,7 @@ import (
 	"clipboard-server/database"
 	"clipboard-server/models"
 	"clipboard-server/utils"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -79,8 +80,18 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	// Hash password
-	hashedPassword, err := utils.HashPassword(req.Password)
+	// Generate salt
+	salt, err := utils.GenerateSalt()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
+			Error:   "salt generation failed",
+			Message: "failed to generate password salt",
+		})
+		return
+	}
+
+	// Hash password with salt
+	hashedPassword, err := utils.HashPasswordWithSalt(req.Password, salt)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, models.ErrorResponse{
 			Error:   "password encryption failed",
@@ -94,6 +105,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		Username: req.Username,
 		Email:    req.Email,
 		Password: hashedPassword,
+		Salt:     salt,
 		IsActive: true,
 	}
 
@@ -167,8 +179,31 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// Verify password
-	if !utils.CheckPassword(req.Password, user.Password) {
+	// Verify password with salt (支持向后兼容)
+	var passwordValid bool
+	if user.Salt != "" {
+		// 新用户：使用盐值验证
+		passwordValid = utils.CheckPasswordWithSalt(req.Password, user.Salt, user.Password)
+	} else {
+		// 旧用户：使用旧方法验证，然后升级他们的密码
+		passwordValid = utils.CheckPassword(req.Password, user.Password)
+
+		if passwordValid {
+			// 密码验证通过，升级用户的密码存储方式
+			salt, err := utils.GenerateSalt()
+			if err == nil {
+				hashedPassword, err := utils.HashPasswordWithSalt(req.Password, salt)
+				if err == nil {
+					user.Salt = salt
+					user.Password = hashedPassword
+					database.GetDB().Save(&user) // 保存升级后的密码
+					fmt.Printf("用户 %s 的密码存储方式已升级\n", user.Username)
+				}
+			}
+		}
+	}
+
+	if !passwordValid {
 		c.JSON(http.StatusUnauthorized, models.ErrorResponse{
 			Error:   "invalid credentials",
 			Message: "username or password is incorrect",

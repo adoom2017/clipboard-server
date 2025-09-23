@@ -12,6 +12,48 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// GenerateSalt 生成随机盐值
+func GenerateSalt() (string, error) {
+	salt := make([]byte, 32) // 32字节盐值
+	_, err := rand.Read(salt)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(salt), nil
+}
+
+// HashPasswordWithSalt 使用盐值进行密码哈希
+func HashPasswordWithSalt(password, salt string) (string, error) {
+	// 将密码和盐值结合
+	saltedPassword := password + salt
+
+	// 使用SHA256预哈希来解决BCrypt的72字节长度限制
+	preHash := sha256.Sum256([]byte(saltedPassword))
+	preHashString := hex.EncodeToString(preHash[:])
+
+	// 使用bcrypt进行最终哈希
+	hash, err := bcrypt.GenerateFromPassword([]byte(preHashString), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hash), nil
+}
+
+// CheckPasswordWithSalt 验证带盐的密码
+func CheckPasswordWithSalt(password, salt, hash string) bool {
+	// 将密码和盐值结合
+	saltedPassword := password + salt
+
+	// 使用相同的SHA256预哈希
+	preHash := sha256.Sum256([]byte(saltedPassword))
+	preHashString := hex.EncodeToString(preHash[:])
+
+	// 使用bcrypt验证
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(preHashString))
+	return err == nil
+}
+
+// HashPassword 为了向后兼容保留的简单哈希函数（已废弃，建议使用HashPasswordWithSalt）
 func HashPassword(password string) (string, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -20,6 +62,7 @@ func HashPassword(password string) (string, error) {
 	return string(hash), nil
 }
 
+// CheckPassword 为了向后兼容保留的简单验证函数（已废弃，建议使用CheckPasswordWithSalt）
 func CheckPassword(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
@@ -118,14 +161,14 @@ func TruncateString(s string, maxLength int) string {
 
 func SanitizeContent(content string) string {
 	patterns := []string{
-	//	"password",
-	//	"passwd",
-	//	"pwd",
-	//	"secret",s
-	//	"token",S
-	//	"key",S
-	//	"auth",
-    }
+		//	"password",
+		//	"passwd",
+		//	"pwd",
+		//	"secret",s
+		//	"token",S
+		//	"key",S
+		//	"auth",
+	}
 
 	lowerContent := strings.ToLower(content)
 	for _, pattern := range patterns {

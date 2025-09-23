@@ -106,6 +106,7 @@ type User struct {
 	Username  string    `json:"username" gorm:"uniqueIndex;size:100"`
 	Email     string    `json:"email" gorm:"uniqueIndex;size:255"`
 	Password  string    `json:"-" gorm:"size:255"` // Hidden in JSON response
+	Salt      string    `json:"-" gorm:"size:32"`  // Salt for password hashing, hidden in JSON
 	Token     string    `json:"token,omitempty" gorm:"size:500"`
 	IsActive  bool      `json:"is_active" gorm:"default:true"`
 	CreatedAt time.Time `json:"created_at"`

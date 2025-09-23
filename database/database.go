@@ -52,6 +52,12 @@ func Initialize() error {
 		return fmt.Errorf("failed to migrate database: %v", err)
 	}
 
+	// 运行用户密码迁移（仅在需要时）
+	if err := MigrateExistingUsers(); err != nil {
+		fmt.Printf("Warning: User migration failed: %v\n", err)
+		// 迁移失败不应该阻止系统启动，只是记录警告
+	}
+
 	fmt.Printf("Database initialized successfully at: %s\n", dbPath)
 	return nil
 }
